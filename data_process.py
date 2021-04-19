@@ -20,11 +20,12 @@ DIRNAME_PARSE_PATTERN = re.compile(r'sbw(\d|.+)_cbw(\d|.+)_loss(\d|.+)_rtt(\d+)_
 # Type
 TYPE_AITRANS_DTP = 0
 TYPE_TCP = 1
- 
+TYPE_SPACE = 2
+        
 def parse_client_log(dir_path, client_blocks_dict, client_stat_dict):
     with open(os.path.join(dir_path, "client.log")) as client:
         client_lines = client.readlines()
-        
+
         for line in client_lines[4:-1]:
             if len(line) > 1:
                client_line_list = line.split() 
@@ -35,8 +36,8 @@ def parse_client_log(dir_path, client_blocks_dict, client_stat_dict):
                    client_blocks_dict[CLIENT_BLOCKS_INDEXES[i]].append(client_line_list[i])
         # client_block_frame = pd.DataFrame(client_blocks_dict)
         # client_block_frame.to_csv(os.path.join(dir_path, "client_block.csv"), index=False)
-        
-        
+
+
         # try to parse the last line of client log
         try:
             match = CLIENT_LOG_PATTERN.match(client_lines[-1])
@@ -96,13 +97,13 @@ def parse_server_log(dir_path, server_stats_dict, server_error_list):
             return server_stats_dict, server_error_list 
         else:
             # parse dtp infos
-            if dir_path.endswith("1"):
+            if dir_path.endswith(str(TYPE_TCP)):
                 server_stats_dict["s_recv"].append(-1)
                 server_stats_dict["s_sent"].append(-1)
                 server_stats_dict["s_lost"].append(-1)
                 server_stats_dict["s_rtt(ms)"].append(-1)
                 server_stats_dict["s_cwnd"].append(-1)
-            elif dir_path.endswith("0"):
+            elif dir_path.endswith(str(TYPE_AITRANS_DTP)) or dir_path.endswith(str(TYPE_SPACE)):
                 match = SERVER_DTP_PATTERN.match(server_lines[-3])
                 if match is None:
                     raise ValueError("server re dtp pattern match returns None in : %s" % dir_path, server_lines[-3])
@@ -112,7 +113,7 @@ def parse_server_log(dir_path, server_stats_dict, server_error_list):
                 server_stats_dict["s_rtt(ms)"].append(match.group(4))
                 server_stats_dict["s_cwnd"].append(match.group(5))
             else:
-                raise ValueError("dir path endswith neither 0 or 1")
+                raise ValueError("dir path endswith none of 0, 1, 2")
 
             # parse QoS infos
             match = SERVER_QOS_PATTERN.match(server_lines[-1])

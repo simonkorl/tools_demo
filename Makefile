@@ -4,6 +4,7 @@ DOCKER_DIR = $(CURDIR)/..
 
 TYPE_DTP = 0
 TYPE_TCP = 1
+TYPE_SPACE = 2
 TYPE = $(TYPE_DTP)
 
 NETWORK_S = $(TEST_TRACE_DIR)/sbw0.005000_cbw0.500000_loss0.200000_rtt200_s.txt
@@ -29,10 +30,14 @@ network:
 retest:
 	python baseline.py --server_name aitrans_server --client_name aitrans_client --block $(BLOCK) --retest $(TESTID) --rtime $(RTIME)
 
+baseline_space:
+	cd $(DOCKER_DIR) && make pre_docker_space && make image_test
+	python baseline.py --server_name aitrans_server --client_name aitrans_client --block $(BLOCK) --baselines --type $(TYPE_SPACE)
+
 baseline_tcp:
 	cd $(DOCKER_DIR) && make pre_docker_tcp && make image_tc_test
 	python baseline.py --server_name aitrans_server --client_name aitrans_client --block $(BLOCK) --baselines --type $(TYPE_TCP)
 
-baseline_dtp:	
+baseline_dtp:
 	cd $(DOCKER_DIR) && make pre_docker_aitrans && make image_tc_test
 	python baseline.py --server_name aitrans_server --client_name aitrans_client --block $(BLOCK) --baselines --type $(TYPE_DTP)

@@ -1,5 +1,7 @@
-__pycache__/
-logs/
+**/baselines_bk/
+**/test_traces/
+**/__pycache__/
+**/logs/
 tmp/
 baselines_bk/
 test_traces/
