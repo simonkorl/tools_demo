@@ -44,7 +44,7 @@ parser.add_argument('--server_name', type=str, required=True, default="dtp_serve
 parser.add_argument('--client_name', type=str, required=True, default="dtp_client", help="the container_client_name ")
 
 # baseline setting
-parser.add_argument('--type', type=int, default=0, help="0: DTP, 1: TCP")
+parser.add_argument('--type', type=int, required=True, default=0, help="0: DTP, 1: TCP, 2:DTP-Space")
 
 parser.add_argument('--run_path', type=str, default="/home/aitrans-server/", help="the path of aitrans_server")
 
@@ -186,16 +186,21 @@ def prepare_docker_files(s_trace_path=None, c_trace_path=None):
 
 # prepare shell code
 def prepare_shell_code():
+    client_run_line = './client --no-verify http://{0}:{1}'.format(server_ip, port) if type == 0 or type == 1 \
+        else 'LD_LIBRARY_PATH=./lib:./lib/libtorch/lib ./client {0} {1} & > ./client.log & '.format(server_ip, port)
     client_run = '''
     #!/bin/bash
     cd {0}
-    {3} python3 traffic_control.py -load trace/traces.txt > tc.log 2>&1 &
+    {1} python3 traffic_control.py -load trace/traces.txt > tc.log 2>&1 &
     rm client.log > tmp.log 2>&1
     sleep 0.2
-    ./client --no-verify http://{1}:{2}
-    {3} python3 traffic_control.py --reset eth0
-    '''.format(docker_run_path, server_ip, port, tc_preffix_c)
+    {2}
+    {1} python3 traffic_control.py --reset eth0
+    '''.format(docker_run_path, tc_preffix_c, client_run_line)
 
+    server_run_line = 'LD_LIBRARY_PATH=./lib ./bin/server {0} {1} trace/block_trace/aitrans_block.txt &> ./log/server_aitrans.log &'.format(server_ip, port) if type == 0 or type == 1 \
+        else 'LD_LIBRARY_PATH=./lib:./lib/libtorch/lib ./bin/server {0} {1} trace/block_trace/aitrans_block.txt &> ./log/server_aitrans.log &'.format(server_ip, port)
+         
     server_run = '''
     #!/bin/bash
     cd {2}
@@ -214,8 +219,8 @@ def prepare_shell_code():
 
     cd {2}
     rm log/server_aitrans.log 
-    LD_LIBRARY_PATH=./lib ./bin/server {0} {1} trace/block_trace/aitrans_block.txt &> ./log/server_aitrans.log &
-    '''.format(server_ip, port, docker_run_path, tc_preffix_s, port, compile_preffix)
+    {6}
+    '''.format(server_ip, port, docker_run_path, tc_preffix_s, port, compile_preffix, server_run_line)
 
     with open(tmp_shell_preffix + "/server_run.sh", "w", newline='\n')  as f:
         f.write(server_run)
