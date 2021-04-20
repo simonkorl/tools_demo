@@ -63,6 +63,8 @@ parser.add_argument('--network_s', type=str, default=None, help="the network tra
 
 parser.add_argument('--network_c', type=str, default=None, help="the network trace file for client")
 
+parser.add_argument('--network', type=str, default=None, help="the network trace file for both server and client")
+
 parser.add_argument('--sbw', type=float, help="choose the bandwidth baseline traces for baseline tests")
 
 parser.add_argument('--cbw', type=float, help="choose the bandwidth baseline traces for baseline tests")
@@ -101,6 +103,7 @@ block_trace           = params.block
 
 network_s             = params.network_s
 network_c             = params.network_c
+network               = params.network
 p_s_bw                = params.sbw
 p_c_bw                = params.cbw
 p_loss                = params.loss
@@ -112,6 +115,12 @@ enable_print          = params.enable_print
 p_rtime               = params.rtime
 
 retest                = params.retest
+
+if network:
+    if network_s is None:
+        network_s = network
+    if network_c is None:
+        network_c = network
 
 network_trace         = network_s or network_c
 
@@ -187,7 +196,7 @@ def prepare_docker_files(s_trace_path=None, c_trace_path=None):
 # prepare shell code
 def prepare_shell_code():
     client_run_line = './client --no-verify http://{0}:{1}'.format(server_ip, port) if type == 0 or type == 1 \
-        else 'LD_LIBRARY_PATH=./lib:./lib/libtorch/lib ./client {0} {1} & > ./client.log & '.format(server_ip, port)
+        else 'LD_LIBRARY_PATH=./lib:./lib/libtorch/lib ./client {0} {1}'.format(server_ip, port)
     client_run = '''
     #!/bin/bash
     cd {0}
