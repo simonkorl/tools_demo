@@ -195,7 +195,7 @@ def prepare_docker_files(s_trace_path=None, c_trace_path=None):
 
 # prepare shell code
 def prepare_shell_code():
-    client_run_line = './client --no-verify http://{0}:{1}'.format(server_ip, port) if type == 0 or type == 1 \
+    client_run_line = './client --no-verify http://{0}:{1}'.format(server_ip, port) if p_type == 0 or p_type == 1 \
         else 'LD_LIBRARY_PATH=./lib:./lib/libtorch/lib ./client {0} {1}'.format(server_ip, port)
     client_run = '''
     #!/bin/bash
@@ -207,9 +207,11 @@ def prepare_shell_code():
     {1} python3 traffic_control.py --reset eth0
     '''.format(docker_run_path, tc_preffix_c, client_run_line)
 
-    server_run_line = 'LD_LIBRARY_PATH=./lib ./bin/server {0} {1} trace/block_trace/aitrans_block.txt &> ./log/server_aitrans.log &'.format(server_ip, port) if type == 0 or type == 1 \
+    server_run_line = 'LD_LIBRARY_PATH=./lib ./bin/server {0} {1} trace/block_trace/aitrans_block.txt &> ./log/server_aitrans.log &'.format(server_ip, port) if p_type == 0 or p_type == 1 \
         else 'LD_LIBRARY_PATH=./lib:./lib/libtorch/lib ./bin/server {0} {1} trace/block_trace/aitrans_block.txt &> ./log/server_aitrans.log &'.format(server_ip, port)
          
+    server_compile_libs = '' if p_type == 0 or p_type == 1 \
+        else '-lc10 -ltorch_cpu'
     server_run = '''
     #!/bin/bash
     cd {2}
@@ -217,7 +219,7 @@ def prepare_shell_code():
 
     cd {2}demo
     {5} rm libsolution.so ../lib/libsolution.so
-    {5} g++ -shared -fPIC solution.cxx -I include -o libsolution.so > compile.log 2>&1
+    {5} g++ -shared -fPIC solution.cxx -I. -I../lib/libtorch/include -L../lib/libtorch/lib {7} -o libsolution.so > compile.log 2>&1
     cp libsolution.so ../lib
 
     # check port
@@ -229,7 +231,7 @@ def prepare_shell_code():
     cd {2}
     rm log/server_aitrans.log 
     {6}
-    '''.format(server_ip, port, docker_run_path, tc_preffix_s, port, compile_preffix, server_run_line)
+    '''.format(server_ip, port, docker_run_path, tc_preffix_s, port, compile_preffix, server_run_line, server_compile_libs)
 
     with open(tmp_shell_preffix + "/server_run.sh", "w", newline='\n')  as f:
         f.write(server_run)
@@ -243,7 +245,7 @@ order_list = [
     order_preffix + " docker cp ./traffic_control.py " + container_client_name + ":" + docker_run_path,
     order_preffix + " docker cp %s/server_run.sh " %(tmp_shell_preffix) + container_server_name + ":" + docker_run_path,
     order_preffix + " docker cp %s/client_run.sh " %(tmp_shell_preffix) + container_client_name + ":" + docker_run_path,
-    order_preffix + " docker exec -itd " + container_server_name + " nohup /bin/bash %sserver_run.sh" % (docker_run_path)
+    order_preffix + " docker exec -it " + container_server_name + " nohup /bin/bash %sserver_run.sh" % (docker_run_path)
 ]
 
 def load_baseline_trace_lists():
