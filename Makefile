@@ -5,18 +5,21 @@ DOCKER_DIR = $(CURDIR)/..
 TYPE_DTP = 0
 TYPE_TCP = 1
 TYPE_SPACE = 2
+TYPE_TMP = 9
 TYPE = $(TYPE_DTP)
+
+IMAGE_NAME = simonkorl0228/qoe_test_image
 
 NETWORK_S = $(TEST_TRACE_DIR)/sbw0.005000_cbw0.500000_loss0.200000_rtt200_s.txt
 NETWORK_C = $(TEST_TRACE_DIR)/sbw0.005000_cbw0.500000_loss0.200000_rtt200_c.txt
 
 BLOCK = $(BLOCK_TRACE_DIR)/raw/aitrans_block.txt
 
-RTIME = 10
+RTIME = 3
 
-all: baseline_dtp baseline_tcp parse
+RUN_TIMES = 1
 
-.PHONY: baseline
+.PHONY: all
 
 parse:
 	python data_process.py
@@ -30,14 +33,33 @@ network:
 retest:
 	python baseline.py --server_name aitrans_server --client_name aitrans_client --block $(BLOCK) --retest $(TESTID) --rtime $(RTIME)
 
+baseline_tmp: TYPE=9
+baseline_tmp:
+	make _baseline_base
+
+baseline_space: TYPE=2
 baseline_space:
-	cd $(DOCKER_DIR) && make pre_docker_space && make image_test
-	python baseline.py --server_name aitrans_server --client_name aitrans_client --block $(BLOCK) --baselines --type $(TYPE_SPACE)
+	make _baseline_base
 
+baseline_tcp: TYPE=1
 baseline_tcp:
-	cd $(DOCKER_DIR) && make pre_docker_tcp && make image_tc_test
-	python baseline.py --server_name aitrans_server --client_name aitrans_client --block $(BLOCK) --baselines --type $(TYPE_TCP)
+	make _baseline_base
 
+baseline_dtp: TYPE=0
 baseline_dtp:
-	cd $(DOCKER_DIR) && make pre_docker_aitrans && make image_tc_test
-	python baseline.py --server_name aitrans_server --client_name aitrans_client --block $(BLOCK) --baselines --type $(TYPE_DTP)
+	make _baseline_base
+
+_baseline_base:
+	make _restart_docker
+	make baseline
+
+_restart_docker:
+	sudo docker stop aitrans_server; \
+	sudo docker stop aitrans_client; \
+	sudo docker rm aitrans_server; \
+	sudo docker rm aitrans_client; \
+	sudo docker run --privileged -dit --cap-add=NET_ADMIN --name aitrans_server $(IMAGE_NAME):$(TYPE).0.2; \
+	sudo docker run --privileged -dit --cap-add=NET_ADMIN --name aitrans_client $(IMAGE_NAME):$(TYPE).0.2; \
+
+baseline:
+	python baseline.py --server_name aitrans_server --client_name aitrans_client --block $(BLOCK) --baselines --type $(TYPE) --run_times $(RUN_TIMES) --rtime $(RTIME) 
