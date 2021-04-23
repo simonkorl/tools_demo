@@ -196,7 +196,7 @@ def prepare_docker_files(s_trace_path=None, c_trace_path=None):
 # prepare shell code
 def prepare_shell_code():
     client_run_line = './client --no-verify http://{0}:{1}'.format(server_ip, port) if p_type == 0 or p_type == 1 \
-        else 'LD_LIBRARY_PATH=./lib:./lib/libtorch/lib ./client {0} {1}'.format(server_ip, port)
+        else 'LD_LIBRARY_PATH=./lib ./client {0} {1}'.format(server_ip, port)
     client_run = '''
     #!/bin/bash
     cd {0}
@@ -208,7 +208,7 @@ def prepare_shell_code():
     '''.format(docker_run_path, tc_preffix_c, client_run_line)
 
     server_run_line = 'LD_LIBRARY_PATH=./lib ./bin/server {0} {1} trace/block_trace/aitrans_block.txt &> ./log/server_aitrans.log &'.format(server_ip, port) if p_type == 0 or p_type == 1 \
-        else 'LD_LIBRARY_PATH=./lib:./lib/libtorch/lib ./bin/server {0} {1} trace/block_trace/aitrans_block.txt &> ./log/server_aitrans.log &'.format(server_ip, port)
+        else 'LD_LIBRARY_PATH=./lib ./bin/server {0} {1} trace/block_trace/aitrans_block.txt &> ./log/server_aitrans.log &'.format(server_ip, port)
          
     server_compile_libs = '' if p_type == 0 or p_type == 1 \
         else '-lc10 -ltorch_cpu'
@@ -219,7 +219,7 @@ def prepare_shell_code():
 
     cd {2}demo
     {5} rm libsolution.so ../lib/libsolution.so
-    {5} g++ -shared -fPIC solution.cxx -I. -I../lib/libtorch/include -L../lib/libtorch/lib {7} -o libsolution.so > compile.log 2>&1
+    {5} g++ -shared -fPIC solution.cxx -I. -o libsolution.so > compile.log 2>&1
     cp libsolution.so ../lib
 
     # check port
@@ -231,7 +231,7 @@ def prepare_shell_code():
     cd {2}
     rm log/server_aitrans.log 
     {6}
-    '''.format(server_ip, port, docker_run_path, tc_preffix_s, port, compile_preffix, server_run_line, server_compile_libs)
+    '''.format(server_ip, port, docker_run_path, tc_preffix_s, port, compile_preffix, server_run_line)
 
     with open(tmp_shell_preffix + "/server_run.sh", "w", newline='\n')  as f:
         f.write(server_run)
