@@ -6,7 +6,9 @@ TYPE_DTP = 0
 TYPE_TCP = 1
 TYPE_SPACE = 2
 TYPE_TMP = 9
-TYPE = $(TYPE_DTP)
+TYPE = $(TYPE_TMP)
+
+VERSION = 0
 
 IMAGE_NAME = simonkorl0228/qoe_test_image
 
@@ -58,8 +60,8 @@ _restart_docker:
 	sudo docker stop aitrans_client; \
 	sudo docker rm aitrans_server; \
 	sudo docker rm aitrans_client; \
-	sudo docker run --privileged -dit --cap-add=NET_ADMIN --name aitrans_server $(IMAGE_NAME):$(TYPE).0.2; \
-	sudo docker run --privileged -dit --cap-add=NET_ADMIN --name aitrans_client $(IMAGE_NAME):$(TYPE).0.2; \
+	sudo docker run --privileged -dit --cap-add=NET_ADMIN --name aitrans_server $(IMAGE_NAME):$(TYPE).$(VERSION).2; \
+	sudo docker run --privileged -dit --cap-add=NET_ADMIN --name aitrans_client $(IMAGE_NAME):$(TYPE).$(VERSION).2; \
 
-baseline:
+baseline: _restart_docker
 	python baseline.py --server_name aitrans_server --client_name aitrans_client --block $(BLOCK) --baselines --type $(TYPE) --run_times $(RUN_TIMES) --rtime $(RTIME) 
