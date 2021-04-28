@@ -30,10 +30,10 @@ copy:
 	cp -r ./baselines_bk ~/baseline_data_process
 
 network:
-	python baseline.py --server_name aitrans_server --client_name aitrans_client --block $(BLOCK) --network_s $(NETWORK_S) --network_c $(NETWORK_C) --rtime $(RTIME)
+	python baseline.py --type $(TYPE) --server_name aitrans_server --client_name aitrans_client --block $(BLOCK) --network_s $(NETWORK_S) --network_c $(NETWORK_C) --rtime $(RTIME)
 
 retest:
-	python baseline.py --server_name aitrans_server --client_name aitrans_client --block $(BLOCK) --retest $(TESTID) --rtime $(RTIME)
+	python baseline.py --type $(TYPE) --server_name aitrans_server --client_name aitrans_client --block $(BLOCK) --retest $(TESTID) --rtime $(RTIME)
 
 baseline_tmp: TYPE=9
 baseline_tmp:

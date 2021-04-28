@@ -195,8 +195,16 @@ def prepare_docker_files(s_trace_path=None, c_trace_path=None):
 
 # prepare shell code
 def prepare_shell_code():
-    client_run_line = './client --no-verify http://{0}:{1}'.format(server_ip, port) if p_type == 0 or p_type == 1 \
-        else 'LD_LIBRARY_PATH=./lib ./client {0} {1}'.format(server_ip, port)
+
+    client_run_line = ''
+    if p_type == 0 or p_type == 1:
+        client_run_line = './client --no-verify http://{0}:{1}'
+    # elif p_type == 3:
+    #     client_run_line = 'sudo sh -c "LD_LIBRARY_PATH=./lib:./lib/libtorch/lib ./client {0} {1}" &> client_err.log'
+    else:
+        client_run_line = 'LD_LIBRARY_PATH=./lib ./client {0} {1}'
+    client_run_line = client_run_line.format(server_ip, port)
+
     client_run = '''
     #!/bin/bash
     cd {0}
@@ -207,8 +215,14 @@ def prepare_shell_code():
     {1} python3 traffic_control.py --reset eth0
     '''.format(docker_run_path, tc_preffix_c, client_run_line)
 
-    server_run_line = 'LD_LIBRARY_PATH=./lib ./bin/server {0} {1} trace/block_trace/aitrans_block.txt &> ./log/server_aitrans.log &'.format(server_ip, port) if p_type == 0 or p_type == 1 \
-        else 'LD_LIBRARY_PATH=./lib ./bin/server {0} {1} trace/block_trace/aitrans_block.txt &> ./log/server_aitrans.log &'.format(server_ip, port)
+    server_run_line = ''
+    if p_type == 0 or p_type == 1:
+        server_run_line = 'LD_LIBRARY_PATH=./lib ./bin/server {0} {1} trace/block_trace/aitrans_block.txt &> ./log/server_aitrans.log &'
+    # elif p_type == 3:
+    #     server_run_line = 'LD_LIBRARY_PATH=./lib:./lib/libtorch/lib ./bin/server {0} {1} trace/block_trace/aitrans_block.txt" &> ./log/server_aitrans.log'
+    else:
+        server_run_line = 'LD_LIBRARY_PATH=./lib ./bin/server {0} {1} trace/block_trace/aitrans_block.txt &> ./log/server_aitrans.log &'
+    server_run_line = server_run_line.format(server_ip, port)
          
     server_compile_libs = '' if p_type == 0 or p_type == 1 \
         else '-lc10 -ltorch_cpu'
