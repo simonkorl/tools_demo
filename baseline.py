@@ -198,11 +198,11 @@ def prepare_shell_code():
 
     client_run_line = ''
     if p_type == 0 or p_type == 1:
-        client_run_line = './client --no-verify http://{0}:{1}'
+        client_run_line = './client --no-verify http://{0}:{1} > client_err.log 2>&1'
     # elif p_type == 3:
     #     client_run_line = 'sudo sh -c "LD_LIBRARY_PATH=./lib:./lib/libtorch/lib ./client {0} {1}" &> client_err.log'
     else:
-        client_run_line = 'LD_LIBRARY_PATH=./lib ./client {0} {1}'
+        client_run_line = 'LD_LIBRARY_PATH=./lib ./client {0} {1} > client_err.log 2>&1'
     client_run_line = client_run_line.format(server_ip, port)
 
     client_run = '''
@@ -228,24 +228,24 @@ def prepare_shell_code():
         else '-lc10 -ltorch_cpu'
     server_run = '''
     #!/bin/bash
-    cd {2}
-    {3} python3 traffic_control.py -aft 3.1 -load trace/traces.txt > tc.log 2>&1 &
+    cd {0}
+    {1} python3 traffic_control.py -aft 3.1 -load trace/traces.txt > tc.log 2>&1 &
 
-    cd {2}demo
-    {5} rm libsolution.so ../lib/libsolution.so
-    {5} g++ -shared -fPIC solution.cxx -I. -o libsolution.so > compile.log 2>&1
+    cd {0}demo
+    {3} rm libsolution.so ../lib/libsolution.so
+    {3} g++ -shared -fPIC solution.cxx -I. -o libsolution.so > compile.log 2>&1
     cp libsolution.so ../lib
 
     # check port
-    a=`lsof -i:{4} | awk '/server/ {{print$2}}'`
+    a=`lsof -i:{2} | awk '/server/ {{print$2}}'`
     if [ $a > 0 ]; then
         kill -9 $a
     fi
 
-    cd {2}
+    cd {0}
     rm log/server_aitrans.log 
-    {6}
-    '''.format(server_ip, port, docker_run_path, tc_preffix_s, port, compile_preffix, server_run_line)
+    {4}
+    '''.format(docker_run_path, tc_preffix_s, port, compile_preffix, server_run_line)
 
     with open(tmp_shell_preffix + "/server_run.sh", "w", newline='\n')  as f:
         f.write(server_run)
@@ -269,6 +269,7 @@ def run_dockers():
     global server_ip, order_list
     qoe_sample = []
     run_seq = 0
+    now_qoe = 0
     retry_times = 0
     while run_seq < run_times:
         print("The %d round :" % (run_seq))
@@ -314,25 +315,34 @@ def run_dockers():
         # move logs
         os.system(order_preffix + " rm -f logs/*")
         os.system(order_preffix + " docker cp " + container_client_name + ":%sclient.log %s/." % (docker_run_path, logs_preffix))
+        os.system(order_preffix + " docker cp " + container_client_name + ":%sclient_err.log %s/." % (docker_run_path, logs_preffix))
+
         os.system(order_preffix + " docker cp " + container_server_name + ":%slog/server_aitrans.log %s/." % (docker_run_path, logs_preffix))
+        os.system(order_preffix + " docker cp " + container_server_name + ":%slog/server_error.log %s/." % (docker_run_path, logs_preffix))
         os.system(order_preffix + " docker cp " + container_server_name + ":%sdemo/compile.log %s/compile.log" % (docker_run_path, logs_preffix))
+
         if network_trace or test_baseline or retest: 
             os.system(order_preffix + " docker cp " + container_client_name + ":%stc.log %s/client_tc.log" % (docker_run_path, logs_preffix))
             os.system(order_preffix + " docker cp " + container_server_name + ":%stc.log %s/server_tc.log" % (docker_run_path, logs_preffix))
         # move .so file
         os.system(order_preffix + " docker cp " + container_server_name + ":%slib/libsolution.so %s/." % (docker_run_path, logs_preffix))
 
-        # cal qoe
-        now_qoe = cal_single_block_qoe("%s/client.log" % (logs_preffix), 0.9)
+        
         # rerun main.py if server fail to start
         try:
             f = open("%s/client.log" % (logs_preffix), 'r')
             if len(f.readlines()) <= 5:
                 print("server run fail, begin restart!")
                 retry_times += 1
+                if retry_times > 3:
+                    now_qoe = 0
+                    qoe_sample.append(now_qoe)
+                    return qoe_sample, retry_times
                 continue
+            # cal qoe
+            now_qoe = cal_single_block_qoe("%s/client.log" % (logs_preffix), 0.9)
         except:
-            print("Can not find %/client.log, file open fail!" % (logs_preffix))
+            print("Can not find %s/client.log, file open fail!" % (logs_preffix))
         # with open("%s/client.log" % (logs_preffix), 'r') as f:
         #     if len(f.readlines()) <= 5:
         #         if enable_print:
