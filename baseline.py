@@ -221,7 +221,7 @@ def prepare_shell_code():
     # elif p_type == 3:
     #     server_run_line = 'LD_LIBRARY_PATH=./lib:./lib/libtorch/lib ./bin/server {0} {1} trace/block_trace/aitrans_block.txt" &> ./log/server_aitrans.log'
     else:
-        server_run_line = 'LD_LIBRARY_PATH=./lib ./bin/server {0} {1} trace/block_trace/aitrans_block.txt &> ./log/server_aitrans.log &'
+        server_run_line = 'LD_LIBRARY_PATH=./lib ./bin/server {0} {1} trace/block_trace/aitrans_block.txt &> ./log/server_err.log &'
     server_run_line = server_run_line.format(server_ip, port)
          
     server_compile_libs = '' if p_type == 0 or p_type == 1 \
@@ -318,7 +318,7 @@ def run_dockers():
         os.system(order_preffix + " docker cp " + container_client_name + ":%sclient_err.log %s/." % (docker_run_path, logs_preffix))
 
         os.system(order_preffix + " docker cp " + container_server_name + ":%slog/server_aitrans.log %s/." % (docker_run_path, logs_preffix))
-        os.system(order_preffix + " docker cp " + container_server_name + ":%slog/server_error.log %s/." % (docker_run_path, logs_preffix))
+        os.system(order_preffix + " docker cp " + container_server_name + ":%slog/server_err.log %s/." % (docker_run_path, logs_preffix))
         os.system(order_preffix + " docker cp " + container_server_name + ":%sdemo/compile.log %s/compile.log" % (docker_run_path, logs_preffix))
 
         if network_trace or test_baseline or retest: 
