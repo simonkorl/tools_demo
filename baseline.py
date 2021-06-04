@@ -334,7 +334,7 @@ def run_dockers():
             if len(f.readlines()) <= 5:
                 print("server run fail, begin restart!")
                 retry_times += 1
-                if retry_times > 3:
+                if retry_times >= 3:
                     now_qoe = 0
                     qoe_sample.append(now_qoe)
                     return qoe_sample, retry_times
@@ -373,19 +373,19 @@ def generate_net_trace(s_bws, c_bws, losses, rtts, asymmetry=True):
         if len(s_bws) != len(c_bws):
             raise ValueError("when `asymmetry` is True, the length of `sbw` should be equal to that of `cbw`")
         for i in range(len(s_bws)):
-            sbw = s_bws[i]
+            sbw = s_bws[i] # Mbps
             cbw = c_bws[i]
             for rtt in rtts:
                 for loss in losses:
                     filename_s = "sbw%f_cbw%f_loss%f_rtt%d_s.txt" % (sbw, cbw, loss, rtt)
                     filepath_s = os.path.join("./test_traces/", filename_s)
                     with open(filepath_s, 'w') as f:
-                        f.write("0,%f,%f,%f" % (sbw, loss, rtt / 2 / 1000))
+                        f.write("0,%f,%f,%f" % (sbw / 8, loss, rtt / 2 / 1000))
 
                     filename_c = "sbw%f_cbw%f_loss%f_rtt%d_c.txt" % (sbw, cbw, loss, rtt)
                     filepath_c = os.path.join("./test_traces/", filename_c)
                     with open(filepath_c, 'w') as f:
-                        f.write("0,%f,%f,%f" % (cbw, loss, rtt / 2 / 1000))
+                        f.write("0,%f,%f,%f" % (cbw / 8, loss, rtt / 2 / 1000))
                     
                     test_pairs.append((filename_s, filename_c))
     else:
@@ -395,12 +395,12 @@ def generate_net_trace(s_bws, c_bws, losses, rtts, asymmetry=True):
                     filename_s = "sbw%f_cbw%f_loss%f_rtt%d_s.txt" % (sbw, sbw, loss, rtt)
                     filepath_s = os.path.join("./test_traces/", filename_s)
                     with open(filepath_s, 'w') as f:
-                        f.write("0,%f,%f,%f" % (sbw, loss, rtt / 2 / 1000))
+                        f.write("0,%f,%f,%f" % (sbw / 8, loss, rtt / 2 / 1000))
 
                     filename_c = "sbw%f_cbw%f_loss%f_rtt%d_c.txt" % (sbw, sbw, loss, rtt)
                     filepath_c = os.path.join("./test_traces/", filename_c)
                     with open(filepath_c, 'w') as f:
-                        f.write("0,%f,%f,%f" % (sbw, loss, rtt / 2 / 1000))
+                        f.write("0,%f,%f,%f" % (sbw / 8, loss, rtt / 2 / 1000))
                         
                     test_pairs.append((filename_s, filename_c))
     

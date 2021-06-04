@@ -113,7 +113,14 @@ def parse_server_log(dir_path, server_stats_dict, server_error_list):
                 server_stats_dict["s_rtt(ms)"].append(match.group(4))
                 server_stats_dict["s_cwnd"].append(match.group(5))
             else:
-                raise ValueError("dir path endswith none of 0, 1, 2")
+                match = SERVER_DTP_PATTERN.match(server_lines[-2])
+                if match is None:
+                    raise ValueError("server re dtp pattern match returns None in : %s" % dir_path, server_lines[-3])
+                server_stats_dict["s_recv"].append(match.group(1))
+                server_stats_dict["s_sent"].append(match.group(2))
+                server_stats_dict["s_lost"].append(match.group(3))
+                server_stats_dict["s_rtt(ms)"].append(match.group(4))
+                server_stats_dict["s_cwnd"].append(match.group(5))
 
             # parse QoS infos
             match = SERVER_QOS_PATTERN.match(server_lines[-1])
