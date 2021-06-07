@@ -330,24 +330,28 @@ def run_dockers():
         
         # rerun main.py if server fail to start
         try:
+            error_pos_counter = 0
             f = open("%s/client.log" % (logs_preffix), 'r')
+            error_pos_counter += 1
             if len(f.readlines()) <= 5:
                 print("server run fail, begin restart!")
                 retry_times += 1
                 if retry_times >= 3:
+                    print("server retry times excceed")
                     now_qoe = 0
                     qoe_sample.append(now_qoe)
                     return qoe_sample, retry_times
                 continue
             # cal qoe
             now_qoe = cal_single_block_qoe("%s/client.log" % (logs_preffix), 0.9)
+            error_pos_counter += 1
         except:
-            print("Can not find %s/client.log, file open fail!" % (logs_preffix))
-        # with open("%s/client.log" % (logs_preffix), 'r') as f:
-        #     if len(f.readlines()) <= 5:
-        #         if enable_print:
-        #             print("server run fail, begin restart!")
-        #         continue
+            if error_pos_counter == 0:
+                print("Can not find %s/client.log, file open fail!" % (logs_preffix))
+            elif error_pos_counter == 1:
+                print("Error in cal_single_block_qoe")
+            else:
+                print("Something unexpected happened after cal_single_block_qoe")
         qoe_sample.append(now_qoe)
         print("qoe : ", now_qoe)
         run_seq += 1
