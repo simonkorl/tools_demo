@@ -19,11 +19,25 @@ def cal_single_block_qoe(block_file, a):
     lines[:] = lines[start : end]
     lines[:] = [line.strip() for line in lines]
     lines[:] = [list(map(float, line.split())) for line in lines]
-    satisfied_blocks = [line for line in lines if len(line) == 5 and line[1] <= line[4]]
+    blocks = [line for line in lines if len(line) == 5]
     qoe = 0
-    tmp = [3, 2, 1]
-    for block in satisfied_blocks:
-        qoe += a * tmp[(int(block[3]))] / 3 + (1 - a)
+    max_prio = 3
+    prio_weights = [i for i in range(max_prio, 0, -1)]
+    Tp = 100
+    for block in blocks:
+        block_bct = int(block[1])
+        block_size = int(block[2])
+        block_prio = int(block[3])
+        block_ddl = int(block[4])
+        block_qoe = (a * prio_weights[block_prio] / max_prio + (1 - a)) * block_size
+        ddl_weight = 1
+        if block_bct <= block_ddl:
+            ddl_weight = 1
+        elif block_bct > block_ddl and block_bct < (block_ddl + Tp):
+            ddl_weight = ((block_ddl + Tp - block_bct) / Tp)**2
+        else:
+            ddl_weight = 0
+        qoe += block_qoe * ddl_weight 
     return qoe
 
 def cal_player_qoe(a):
